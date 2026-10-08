@@ -1,6 +1,16 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'tsdown';
 
-const packageId = 'dsh-capability-panel';
+// The client banner's module id MUST be the published package name: the host
+// mounts a bundle by that name and then asks `__ModuleLoader__` for exactly it,
+// so a hardcoded id silently breaks the entry the moment the package is renamed
+// (as a scoped fork name does) — the bundle registers itself under the old id,
+// the requested one never appears, and the boot reports "import failed" plus a
+// duplicate factory registration. Read the manifest instead of repeating it.
+const packageId = (JSON.parse(readFileSync('package.json', 'utf8')) as { name?: unknown }).name;
+if (typeof packageId !== 'string' || packageId === '') {
+  throw new Error('tsdown.config.ts: package.json has no name; run the build from the package root');
+}
 
 // DSH uses two different loaders: the host entry is a plain Node ESM module,
 // while the browser entry must be a deferred CJS factory registered through

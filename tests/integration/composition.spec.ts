@@ -10,6 +10,7 @@
  * two halves is exactly what a unit test of either half alone cannot see.
  */
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import packageJson from '../../package.json' with { type: 'json' };
 import cordisPatch from '../../cordis.patch.yml?raw';
 import { apply } from '../../src/index.js';
@@ -23,10 +24,24 @@ describe('bundle declaration', () => {
     const dsh = pkg['dsh'] as { bundle?: { patch?: string } } | undefined;
     const patchPath = dsh?.bundle?.patch;
     expect(patchPath).toBe('./cordis.patch.yml');
-    // The row id the loader inserts must match the package name's tail, so a
-    // renamed package cannot silently mount under a stale id.
+    // `id` is the settings namespace this plugin's data lives under, so it is
+    // pinned: renaming the package must never move the user's stored presets
+    // and session switches. `name` is the module the loader mounts, so it must
+    // be exactly the package name — derived here, so a rename cannot silently
+    // mount under a stale id.
     expect(cordisPatch).toContain('id: capability-panel');
-    expect(cordisPatch).toContain("name: 'dsh-capability-panel'");
+    expect(cordisPatch).toContain(`name: '${pkg.name}'`);
+  });
+
+  it('ships a client bundle registered under the package name', () => {
+    // The host mounts a bundle by package name and then asks
+    // `__ModuleLoader__` for exactly that id. The id is baked in at build
+    // time, so a lib/ built BEFORE a rename registers itself under the old
+    // name: the entry never activates, and the boot reports "import failed"
+    // plus a duplicate factory registration. Cheap to assert, expensive to
+    // discover in a crashed boot.
+    const first = readFileSync('lib/client.js', 'utf8').split('\n', 1)[0]!;
+    expect(first).toContain(`id: "${pkg.name}"`);
   });
 
   it('declares the client half where the bundle loader looks for it', () => {
