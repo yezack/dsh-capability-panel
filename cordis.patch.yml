@@ -6,5 +6,7 @@
 #
 # Install: dsh plugin --profile web add <this package, path or git URL>
 - insert:
+    # The id stays `capability-panel`: it is the settings namespace this
+    # plugin's data lives under, so renaming the package must not move it.
     - id: capability-panel
-      name: 'dsh-capability-panel'
+      name: '@yezack/dsh-capability-panel'

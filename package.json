@@ -1,5 +1,5 @@
 {
-  "name": "dsh-capability-panel",
+  "name": "@yezack/dsh-capability-panel",
   "version": "1.4.0",
   "description": "Manage MCP servers, skills, and tools for your DeepSeek Harness agent — true in-context state (loaded/truncated/evicted) and per-session switches for every capability.",
   "license": "MIT",
@@ -85,9 +85,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pure-craft/dsh-capability-panel.git"
+    "url": "git+https://github.com/yezack/dsh-capability-panel.git"
   },
-  "homepage": "https://github.com/pure-craft/dsh-capability-panel",
+  "homepage": "https://github.com/yezack/dsh-capability-panel",
   "bugs": {
     "url": "https://github.com/pure-craft/dsh-capability-panel/issues"
   },
