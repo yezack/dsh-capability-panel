@@ -301,6 +301,8 @@ export function apply(ctx: SlotContext): void {
       // Which server is mid-reconnect: its button spins and disables until the
       // request settles, so a click reads as "starting" not "nothing happened".
       const [reconnecting, setReconnecting] = react.useState<string | null>(null);
+      // Reveal the MCP servers this session's own preset switches off.
+      const [showPresetOff, setShowPresetOff] = react.useState(false);
       const sessionId = props.sessionId ?? null;
 
       // Refetch when the panel opens rather than polling: the answer is only
@@ -472,7 +474,16 @@ export function apply(ctx: SlotContext): void {
       };
       const view = payload === null ? null : filterPayload(payload, normalizedQuery, (skill) => t(`state.${skill.state}`), skillSourceLabel);
       const skills = view === null ? [] : sortSkills(view.skills);
-      const mcp = view?.mcp ?? [];
+      const mcpAll = view?.mcp ?? [];
+      // A server the session's preset switches off is off before the session
+      // ever acts, so it is hidden by default: this panel answers "what can this
+      // session reach". A server switched off HERE is the session's own doing
+      // and stays listed. An explicit query still searches everything, so a
+      // hidden row is never unreachable by name.
+      const presetOff = mcpAll.filter((server) => server.enabled === false && server.defaultDisabled === true);
+      const mcp = filtering || showPresetOff
+        ? mcpAll
+        : mcpAll.filter((server) => !presetOff.includes(server));
       const systemTools = view?.systemTools ?? [];
       const blocked = payload?.blocked ?? {};
       const totals = {
@@ -892,6 +903,33 @@ export function apply(ctx: SlotContext): void {
         h('div', { key: `empty:${text}`, style: { color: TOK.textTertiary, padding: '8px 2px' } }, text);
 
 
+      /**
+       * The hidden-count line and the switch that reveals those rows. It renders
+       * even when every server is hidden, so the way back is always on screen,
+       * and it stays out of the way while a query is filtering (everything is
+       * listed then anyway).
+       */
+      const presetOffRow = () => {
+        if (presetOff.length === 0 || filtering) return null;
+        return h(
+          'div',
+          { className: 'ci-preset-off' },
+          h('span', { className: 'ci-preset-off-text' }, t('mcp.presetOff', { count: presetOff.length })),
+          h(
+            'button',
+            {
+              type: 'button',
+              role: 'switch',
+              'aria-checked': showPresetOff,
+              'aria-label': t('mcp.presetOffAria'),
+              className: showPresetOff ? 'ci-preset-off-toggle ci-preset-off-on' : 'ci-preset-off-toggle',
+              onClick: () => { setShowPresetOff(!showPresetOff); },
+            },
+            showPresetOff ? t('mcp.presetOffHide') : t('mcp.presetOffShow'),
+          ),
+        );
+      };
+
       const notices = [
         snap.loading && payload === null
           ? h('div', { key: 'loading', 'aria-live': 'polite', style: { color: TOK.textTertiary, padding: '4px 0' } }, t('status.loading'))
@@ -958,9 +996,11 @@ export function apply(ctx: SlotContext): void {
               h(
                 Tabs.Panel,
                 { value: 'mcp' },
-                mcp.length === 0 && payload !== null && !snap.loading
+                // "No MCP servers" is a statement about the host, so it keys off
+                // the unfiltered list: a row hidden by default is not absence.
+                mcpAll.length === 0 && payload !== null && !snap.loading
                   ? emptyNote(t('empty.mcp'))
-                  : h('div', {}, ...groupBySource(mcp, (s) => s.source === undefined || s.source === 'host' ? 'host' : `preset:${s.source}`).flatMap(([groupKey, items], i) => [
+                  : h('div', {}, presetOffRow(), ...groupBySource(mcp, (s) => s.source === undefined || s.source === 'host' ? 'host' : `preset:${s.source}`).flatMap(([groupKey, items], i) => [
                       sourceSectionHeader(groupKey, items[0]!.source ?? 'host', items.length, i === 0, items.find((item) => item.path !== undefined)?.path, true),
                       ...items.map(serverRow),
                     ])),

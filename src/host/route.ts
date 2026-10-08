@@ -303,6 +303,9 @@ export function createRouteHandler(
         sessionId,
         sessionId === null ? EMPTY_STATE : (capabilities.state(sessionId) ?? EMPTY_STATE),
         blockedCounts,
+        // The preset layer's stored disabled list, so the payload can mark the
+        // servers that layer switched off (the composer hides those by default).
+        (presetId) => presetTools.defaultsFor(presetId),
       );
       json(res, 200, persistNote === undefined
         ? payload

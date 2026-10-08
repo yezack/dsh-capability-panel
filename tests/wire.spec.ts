@@ -53,6 +53,16 @@ describe('parseInspectorPayload', () => {
     (bad as { blocked: unknown }).blocked = { x: 'many' };
     expect(parseInspectorPayload(bad)).toBeNull();
   });
+
+  it('carries the preset-off marker, and rejects a non-boolean one', () => {
+    const marked = validPayload();
+    (marked.mcp[0] as { defaultDisabled?: unknown }).defaultDisabled = true;
+    expect(parseInspectorPayload(marked)).toEqual(marked);
+
+    const bad = validPayload();
+    (bad.mcp[0] as { defaultDisabled?: unknown }).defaultDisabled = 'yes';
+    expect(parseInspectorPayload(bad)).toBeNull();
+  });
 });
 
 describe('rejection paths, the version-skew defence', () => {

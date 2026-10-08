@@ -625,3 +625,73 @@ describe('buildPayload MCP source with preset', () => {
     expect(presetSkill?.group).toBe('preset:Cordis');
   });
 });
+
+describe('defaultDisabled marks the servers the preset switches off', () => {
+  const mcpTools = {
+    schemas: () => [{ name: 'mcp__frida__attach' }, { name: 'mcp__frida__list' }, { name: 'mcp__github__issue' }],
+  };
+  const servicesWith = (extra: Record<string, unknown>) => ({
+    get: (name: string) => extra[name],
+  });
+
+  it('marks a server whose every registered tool is a preset default', () => {
+    const ctx = servicesWith({ tools: mcpTools });
+    const result = readMcp(
+      ctx as never, [], new Set(['frida']), new Set(), undefined, undefined, undefined, undefined,
+      new Set(['mcp__frida__attach', 'mcp__frida__list']),
+    );
+    expect(result.find((server) => server.server === 'frida')).toMatchObject({ enabled: false, defaultDisabled: true });
+    expect(result.find((server) => server.server === 'github')).not.toHaveProperty('defaultDisabled');
+  });
+
+  it('leaves a partially defaulted server unmarked', () => {
+    const ctx = servicesWith({ tools: mcpTools });
+    const result = readMcp(
+      ctx as never, [], new Set(), new Set(), undefined, undefined, undefined, undefined,
+      new Set(['mcp__frida__attach']),
+    );
+    expect(result.find((server) => server.server === 'frida')).not.toHaveProperty('defaultDisabled');
+  });
+
+  it('marks nothing when there is no preset layer to read', () => {
+    const ctx = servicesWith({ tools: mcpTools });
+    const result = readMcp(ctx as never, [], new Set(), new Set());
+    expect(result.every((server) => server.defaultDisabled === undefined)).toBe(true);
+    // A session with a fully-defaulted server but no readable defaults is the
+    // same thing: an empty preset layer must not mark anything, which an
+    // empty-set `every()` over a tool-less server would get wrong.
+    const empty = readMcp(ctx as never, [], new Set(), new Set(), undefined, undefined, undefined, undefined, new Set());
+    expect(empty.every((server) => server.defaultDisabled === undefined)).toBe(true);
+  });
+
+  it('reads the preset layer through the payload for a session', async () => {
+    const ctx = servicesWith({
+      agents: { get: () => ({ ctx: {} }) },
+      skills: { list: () => [] },
+      tools: mcpTools,
+      agentPresets: { composedPreset: () => 'standard', list: () => [] },
+    });
+    const payload = await buildPayload(ctx as never, 's1', EMPTY_STATE, {}, (presetId) => (
+      presetId === 'standard' ? { tools: ['mcp__frida__attach', 'mcp__frida__list'], skills: [] } : undefined
+    ));
+    expect(payload.mcp.find((server) => server.server === 'frida')).toMatchObject({ defaultDisabled: true });
+    expect(payload.mcp.find((server) => server.server === 'github')).not.toHaveProperty('defaultDisabled');
+  });
+
+  it('treats a session without a composed preset, and an unreadable default, as no preset layer', async () => {
+    const ctx = servicesWith({
+      agents: { get: () => ({ ctx: {} }) },
+      skills: { list: () => [] },
+      tools: mcpTools,
+      agentPresets: { composedPreset: () => undefined, list: () => [] },
+    });
+    const payload = await buildPayload(ctx as never, 's1', EMPTY_STATE, {}, () => undefined);
+    expect(payload.mcp.every((server) => server.defaultDisabled === undefined)).toBe(true);
+  });
+
+  it('marks nothing for a session-less payload', async () => {
+    const ctx = servicesWith({ tools: mcpTools });
+    const payload = await buildPayload(ctx as never, null);
+    expect(payload.mcp.every((server) => server.defaultDisabled === undefined)).toBe(true);
+  });
+});

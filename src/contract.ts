@@ -108,6 +108,17 @@ export interface McpServerEntry {
    */
   readonly enabled: boolean;
   /**
+   * True when this session's preset stores a default for EVERY tool the server
+   * currently exposes — i.e. the preset layer, not this session, is what
+   * switches the whole server off. Read from the preset's own stored list
+   * rather than from the session's masks, which hold preset defaults and the
+   * user's own switches alike; a server switched off in the session alone is
+   * never marked this way. The composer hides such a server by default (it is
+   * off before the session ever acts, and that panel answers "what can this
+   * session reach"), behind a switch that reveals it.
+   */
+  readonly defaultDisabled?: boolean;
+  /**
    * Where this MCP server is configured: `"host"` for the host composition,
    * or the preset name for a preset-scoped server.
    */

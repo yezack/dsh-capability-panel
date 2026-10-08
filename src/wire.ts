@@ -66,12 +66,15 @@ function parseMcpServerEntry(value: unknown): McpServerEntry | null {
   }
   const source = optString(value['source']);
   const path = optString(value['path']);
+  const defaultDisabled = value['defaultDisabled'];
+  if (defaultDisabled !== undefined && typeof defaultDisabled !== 'boolean') return null;
   return {
     server: value['server'],
     enabled: value['enabled'],
     tools,
     ...(source === undefined ? {} : { source }),
     ...(path === undefined ? {} : { path }),
+    ...(defaultDisabled === undefined ? {} : { defaultDisabled }),
     ...(value['unavailable'] === true ? { unavailable: true } : {}),
     ...(value['reconnectable'] === true ? { reconnectable: true } : {}),
   };

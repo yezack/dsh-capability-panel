@@ -159,5 +159,15 @@ export const PANEL_CSS = [
   // The settings entry shares the feedback link's quiet styling but is a
   // <button>, so it also needs the control reset the anchor never did.
   '.ci-settings-link{border:0;background:none;padding:0;font-family:inherit}',
+  // Composer panel: the line owning the servers the session's preset switches
+  // off. Those rows are hidden by default — the panel answers "what can this
+  // session reach", and a preset-off server is off before the session acts —
+  // so the count and its switch must always be on screen to bring them back.
+  '.ci-preset-off{display:flex;align-items:center;gap:8px;padding:2px 0 6px;font-size:12px;color:var(--dsw-alias-label-tertiary,#81858c)}',
+  '.ci-preset-off-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+  '.ci-preset-off-toggle{flex:0 0 auto;border:1px solid var(--dsw-alias-border-l2,rgba(0,0,0,.14));background:transparent;color:var(--dsw-alias-label-secondary,#61666b);border-radius:8px;padding:1px 8px;font-size:12px;line-height:1.6;cursor:pointer;font-family:inherit}',
+  '.ci-preset-off-toggle:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(38,49,72,.06));color:var(--dsw-alias-label-primary,#0f1115)}',
+  '.ci-preset-off-toggle:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary,#4176e6);outline-offset:1px}',
+  '.ci-preset-off-on{background:var(--dsw-alias-interactive-bg-hover,rgba(0,0,0,.05));color:var(--dsw-alias-label-primary,#0f1115)}',
   '@media (prefers-reduced-motion: reduce){.ci-thumb,.ci-panel,.ci-collapse,.ci-chevron svg{transition:none !important}}',
 ].join('\n');

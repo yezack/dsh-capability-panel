@@ -37,6 +37,12 @@ export const zh: Record<string, string> = {
   'action.reload.ing': '正在重载 {name}…',
   'action.reloadHint': '重新加载该服务器的插件实例（等同一次热重载）：会断开并重连。对 stdio 类型的服务，这会重启其子进程。',
   'action.reload.failed': '重载 {name} 失败：{error}',
+  // 展示层不撒谎：这些行是「当前 preset 的默认值关掉的」，与本次会话里
+  // 用户自己关掉的行区分开。文案沿用面板现有的「preset」叫法。
+  'mcp.presetOff': '{count} 个 MCP 服务器由当前 preset 关闭',
+  'mcp.presetOffShow': '显示',
+  'mcp.presetOffHide': '隐藏',
+  'mcp.presetOffAria': '显示或隐藏当前 preset 关闭的 MCP 服务器',
   'status.loading': '读取中…',
   'status.error': '读取失败：{error}（可尝试刷新页面；宿主改动需重启 dsh 后生效）',
   'empty.match': '无匹配项',
@@ -117,6 +123,12 @@ export const en: Record<string, string> = {
   'action.reload.ing': 'Reloading {name}…',
   'action.reloadHint': 'Reload this server’s plugin instance (equivalent to one hot reload): it disconnects and reconnects. For a stdio service this restarts its child process.',
   'action.reload.failed': 'Failed to reload {name}: {error}',
+  // These rows are off by the current preset's stored defaults, as opposed to
+  // the ones this session switched off itself — the copy keeps that split.
+  'mcp.presetOff': '{count} MCP server(s) off by this preset',
+  'mcp.presetOffShow': 'Show',
+  'mcp.presetOffHide': 'Hide',
+  'mcp.presetOffAria': 'Show or hide the MCP servers this preset switches off',
   'status.loading': 'Loading…',
   'status.error': 'Failed to load: {error} (try refreshing the page; host changes take effect after a dsh restart)',
   'empty.match': 'No matches',

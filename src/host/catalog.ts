@@ -221,6 +221,7 @@ export function readMcp(
   presetName?: string,
   presetPath?: string,
   maskedServerNames?: ReadonlyMap<string, readonly string[]>,
+  presetDisabled?: ReadonlySet<string>,
 ): McpServerEntry[] {
   const tools = services.get('tools');
   if (tools === undefined) {
@@ -273,7 +274,23 @@ export function readMcp(
       const allGlobal = group.tools.every((tool) => globalNames.has(`mcp__${group.server}__${tool}`));
       const source = allGlobal ? 'host' : (presetName ?? 'preset');
       const rawPath = allGlobal ? dshHome() : presetPath;
-      return { server: group.server, tools: entries, enabled, ...(configuredServers.has(group.server) ? { reconnectable: true } : {}), source, ...(rawPath === undefined ? {} : { path: displayPath(rawPath) }) };
+      // Every tool this server exposes is a stored default of the session's
+      // preset: the preset layer switched it off, not the user. The composer
+      // hides those rows by default and offers a switch to reveal them. A
+      // server with no registered tools is never marked — there is nothing to
+      // compare, and its row is about reachability, not about the preset.
+      const defaultDisabled = presetDisabled !== undefined
+        && group.tools.length > 0
+        && group.tools.every((tool) => presetDisabled.has(`mcp__${group.server}__${tool}`));
+      return {
+        server: group.server,
+        tools: entries,
+        enabled,
+        ...(defaultDisabled ? { defaultDisabled: true } : {}),
+        ...(configuredServers.has(group.server) ? { reconnectable: true } : {}),
+        source,
+        ...(rawPath === undefined ? {} : { path: displayPath(rawPath) }),
+      };
     });
     // A declared server that currently registers no tools would vanish with
     // every mask the session holds for it. The row stays: marked "no tools
@@ -357,6 +374,7 @@ export async function buildPayload(
   sessionId: string | null,
   capabilityState: SessionCapabilityState = EMPTY_STATE,
   blocked: Record<string, number> = {},
+  presetDefaults?: (presetId: string) => { readonly tools: readonly string[]; readonly skills: readonly string[] } | undefined,
 ): Promise<InspectorPayload> {
   const degraded: string[] = [];
   const disabledSkills = new Set(capabilityState.skills.keys());
@@ -377,8 +395,14 @@ export async function buildPayload(
   let presetName: string | undefined;
   let presetPath: string | undefined;
   let presetDirs: { key: string; path: string }[] = [];
+  // Which tools the preset layer stores off, for the row marker below: read
+  // from the preset's own defaults, never from the session's masks — those mix
+  // the preset's defaults with the user's own switches, and only the preset
+  // layer's part means "off before this session ever acted".
+  let presetDisabled = new Set<string>();
   if (agent !== undefined) {
     const presetId = services.get('agentPresets')?.composedPreset(agent.ctx);
+    presetDisabled = new Set(presetDefaults?.(presetId ?? '')?.tools ?? []);
     try {
       // dsh 0.1.7 dropped `path` from roster rows; the filters below already
       // treat a missing path as "no directory to show", so preset grouping
@@ -412,6 +436,7 @@ export async function buildPayload(
       presetName,
       presetPath,
       new Map([...capabilityState.mcpServers].map(([server, mask]) => [server, mask.names])),
+      presetDisabled,
     ),
     systemTools: readSystemTools(services, degraded, disabledSystem, agent),
     blocked,
