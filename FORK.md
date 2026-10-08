@@ -68,6 +68,40 @@ node_modules\.bin\tsdown.cmd          # writes lib/; the client module id comes 
 git add -f lib/index.js lib/index.d.ts lib/client.js   # lib/ is gitignored upstream; .map files stay untracked
 ```
 
+## Versions and releasing
+
+Version rule: **minor and major track upstream; the patch digit is this fork's own revision.**
+
+| Fork | Upstream base | What it carries |
+|---|---|---|
+| `1.4.0` | `c89c2b2` (v1.4.0) | the delta, but built before the rename — its client bundle still registered itself as `dsh-capability-panel`. **Broken**, deprecated on npm. |
+| `1.4.1` | `c89c2b2` (v1.4.0) | the delta, correct module id. |
+
+So upstream's 1.5.0 becomes this fork's `1.5.1` (never plain `1.5.0`), and a second fix on the same
+upstream base becomes `1.4.2`. npm's `latest` tag and ordinary semver ranges keep working, and the
+minor number still says which upstream release this is built on.
+
+Releasing, from the package root (the user-level `.npmrc` registry is a read mirror, so publishes must
+name the real registry explicitly, through the local proxy):
+
+```powershell
+node_modules\.bin\tsdown.cmd          # rebuild lib/ FIRST — the client module id is baked in
+node_modules\vitest\vitest.mjs run    # 625/626 on Windows; see Verifying below
+git add -f lib/index.js lib/index.d.ts lib/client.js
+$env:HTTPS_PROXY='http://127.0.0.1:7897'; $env:HTTP_PROXY='http://127.0.0.1:7897'
+npm publish --ignore-scripts --access public --registry=https://registry.npmjs.org
+```
+
+`--ignore-scripts` is deliberate: `prepublishOnly` runs `pnpm run check`, which cannot pass on Windows
+(the `$HOME` test) and whose `pnpm run` fails under the DSH sandbox anyway. Run the checks by hand.
+
+Consuming a fresh publish: **pnpm 11 refuses packages younger than 24 hours** unless the package is
+exempted by `minimumReleaseAgeExclude` in the consuming project's `pnpm-workspace.yaml`, and the entry
+**must be the bare package name** — an `name@version` entry does not match (measured: with
+`'@yezack/dsh-capability-panel@1.4.0'` listed, the policy still rejected `1.4.0`; with
+`'@yezack/dsh-capability-panel'` it passed). The profile's list already carries the bare name; its two
+older `name@version` entries are presumably inert for the same reason.
+
 ## Verifying
 
 ```powershell
